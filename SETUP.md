@@ -16,8 +16,9 @@ connection check passed. Keep keys in local secrets and enter the app password
 only in the sign-in form. Never send credentials in chat.
 
 On 2026-09-14, you confirmed that sign-in and saving records across sign-out/sign-in
-work. Supabase setup is complete for the initial manual workflow. The next step is
-the first GitHub commit; the remaining setup instructions serve as a reference.
+work. Supabase setup is complete for the initial manual workflow, and the first
+version is now published to GitHub. The remaining setup instructions serve as a
+reference for a fresh installation.
 
 ## 1. Install and launch locally
 
@@ -125,7 +126,7 @@ these pass, I can help finish runtime verification and prepare the next incremen
 
 This local folder now has a Git repository on `main`, with `origin` pointing to
 your GitHub repository. The local secrets file and environment are confirmed
-ignored. No branch or commit has been pushed.
+ignored. The initial version has been pushed to `main`, which tracks `origin/main`.
 
 The following initialization commands are only for a fresh folder without `.git`;
 skip them on this computer:

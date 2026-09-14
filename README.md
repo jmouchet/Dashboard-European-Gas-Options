@@ -138,7 +138,8 @@ The user confirmed successful sign-in, the requested app checks and records
 persisting after signing out and back in on 2026-09-14.
 
 Pending: independent authenticated curriculum counts, desktop/mobile visual review
-and two-account RLS checks. No GitHub files have been uploaded. See
+and two-account RLS checks. The initial version is published on the repository's
+`main` branch. See
 [the database verification procedure](database/VERIFY.md).
 
 ## Project layout
@@ -163,8 +164,8 @@ installation.
 
 ## Next increment
 
-Save the first version to GitHub, use the manual workflow for several days, then
-build the GIE storage connector with documented API fields, units and ingestion tests.
+Use the manual workflow for several days, then build the GIE storage connector
+with documented API fields, units and ingestion tests.
 Provider access details will be requested when that work begins. Predictions use
 evening-review references for post-mortems in V0.1; structured outcome scoring,
 adaptive learning and additional market pages follow the roadmap.
