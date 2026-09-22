@@ -58,9 +58,10 @@ def setup_sidebar():
                             st.rerun()
             else:
                 st.caption("Open Data / Admin for Supabase setup.")
-        st.caption("V0.1 · Manual observations · No live feeds")
+        st.caption("Market Dashboard · GIE + weather")
         if st.button("Refresh saved data", width="stretch"):
             st.session_state.pop("read_cache", None)
+            st.session_state.pop("market_cache", None)
             st.rerun()
 
 

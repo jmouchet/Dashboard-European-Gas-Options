@@ -3,7 +3,7 @@ from copy import deepcopy
 import logging
 
 logger = logging.getLogger(__name__)
-WRITABLE = {"manual_observations", "journal_entries", "predictions", "quiz_attempts"}
+WRITABLE = {"manual_observations", "journal_entries", "predictions", "quiz_attempts", "assets", "option_marks", "market_events"}
 READABLE = WRITABLE | {"knowledge_articles", "questions", "learning_progress"}
 
 

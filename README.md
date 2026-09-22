@@ -1,12 +1,14 @@
 # Gas Intelligence
 
-A personal European gas and gas-options workspace, built with Python, Streamlit,
-Supabase/PostgreSQL and Plotly. This first increment implements the manual workflow
-in section 37 of [the roadmap](GAS_INTELLIGENCE_PROJECT_ROADMAP.md).
+A personal European gas and gas-options workspace built with Python, Streamlit,
+Supabase/PostgreSQL and Plotly. The **Market Dashboard** implements the first
+live-data increment of [roadmap sections 2–9](GAS_INTELLIGENCE_PROJECT_ROADMAP.md).
 
-## First run on Windows
+## Run locally
 
-Open PowerShell in this folder and run each command separately:
+On this computer, double-click **Start Dashboard.cmd**, then open
+[the dashboard](http://127.0.0.1:8501) and sign in. The terminal must remain open.
+For a fresh environment, run each command separately in PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -15,157 +17,105 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```
 
-Open [the local dashboard](http://localhost:8501). No PowerShell activation script
-is required. Without Supabase settings, the app opens in **session preview**.
-Preview entries disappear when the session is lost; export them from Data / Admin.
-There is no alternate local database and no automatic preview-to-Supabase import.
+No activation script is necessary. [SETUP.md](SETUP.md) explains Supabase, local
+secrets and GitHub. Migration **002 is already applied** on the user's project;
+do not rerun it. GIE access is configured in the ignored local secrets file.
 
-After the initial installation, double-click **Start Dashboard.cmd** to launch
-the app again. Keep its terminal window open while using the dashboard.
+Without sign-in, the app uses session preview. Preview entries disappear when
+the session is lost; export them in Data / Admin. Live ingestion requires sign-in
+so fetched data can be archived. There is no automatic preview import.
 
-Follow [SETUP.md](SETUP.md) to connect the existing Supabase project and publish to
-the existing GitHub repository. Do not put keys or passwords in chat or Git.
+## Pages
 
-## What is implemented
-
-| Page | First-version behaviour |
+| Group / page | Implemented behavior |
 | --- | --- |
-| Morning | Sourced manual values, exact contract/region and source selection, point history, data-quality flags |
-| Knowledge Wiki | 10 sourced introductory articles, search and category filters |
-| Daily Learning | Fixed starter pack using units, storage and LNG, with one shared historical episode |
-| Quiz & Review | 20 questions, answer before reveal, self-assessment, confidence and attempt history |
-| Journal | Append-only morning theses, evening reviews and falsifiable predictions |
-| Data / Admin | Connection instructions, record inspection and complete JSON export |
+| Market Dashboard / Morning | EU storage, net injection, LNG send-out, exact previous-gas-day changes, seasonal storage comparison, city weather outlook and feed status |
+| Markets | Exact-contract, source-separated manual TTF price explorer; automatic price feed awaits a provider |
+| Fundamentals | GIE regional storage history and seasonal bands, LNG send-out, 15-day weather forecasts and HDD |
+| Physical System | Searchable GIE storage/LNG dataset directories and sourced asset profiles with optional coordinates |
+| Options & Volatility | Manual ATM, 25D RR and BF marks with expiry, quote convention, source and history |
+| Events | GIE service announcements plus a structured, sourced personal event log |
+| Knowledge Wiki | 10 sourced introductory articles, search and categories |
+| Daily Learning | Starter pack on units, storage and LNG with a chart investigation |
+| Quiz & Review | 20 questions, answer before reveal, self-assessment and confidence |
+| Workspace / Journal | Append-only theses, reviews and falsifiable predictions |
+| Data / Admin | Manual observation entry, personal record inspection/export, feed status and loaded raw/normalized snapshot export |
 
-Supabase sign-in uses the user's email/password and a public project key. Clients
-and read caches are scoped to the browser session. Private tables have row-level
-security and allow users to select and append only their own records. There are
-no app-level update or delete operations. See [Supabase's RLS documentation](https://supabase.com/docs/guides/database/postgres/row-level-security).
+The previous Morning investigation prompts, observation-history block and manual
+input form have been removed from Morning. Existing records are preserved.
 
-No live market data, market feeds, paid sources, automated trades or generated
-market observations are included. All numbers in learning examples are explicitly
-illustrative. Primary references appear inside each article.
+## Automatic data
 
-## Data and calculation conventions
+GIE AGSI supplies storage, GIE ALSI supplies LNG send-out, and Open-Meteo supplies
+city forecasts. GIE also supplies infrastructure datasets and platform notices.
+See [data sources, units, methods and limitations](docs/MARKET_DATA.md).
 
-- Every manual observation retains raw text, normalized numeric value, unit,
-  source name/URL, observation time, optional publication time, original UTC offset,
-  entry time and quality status. For manual entry, `retrieved_at` means the time
-  entered into this application; it is not an API download timestamp.
-- Blank numeric input remains null. NaN/infinity and ambiguous decimal formats
-  are rejected. Out-of-range storage and negative physical flows/volatility are
-  retained and flagged, then excluded from metric cards/charts. Negative TTF
-  prices are not automatically rejected.
-- Storage sanity range is 0–100%; physical flows and volatility must be nonnegative
-  to qualify as `ok`. No undocumented upper bounds are invented for those series.
-- Corrections append a new observation and require a note. Chart selection uses
-  the latest entry for the same metric, exact instrument/scope, source and observed
-  time. A missing/flagged revision does not resurrect an older value.
-- The history helper accepts an `as_of` time and excludes later observations,
-  publications and entries. Backfilled data entered today is not treated as having
-  been available in this app yesterday. Inputs remain manually asserted, not
-  independently verified against a provider.
-- All stored instants use UTC; input requires an explicit offset or `Z`. The
-  original offset is preserved. Observation charts use UTC. Journal dates use
-  Europe/Paris. Gas-day transformations are deferred until a provider's convention
-  is documented.
-- Contracts and sources are never silently stitched. A point chart avoids implying
-  observations between irregular manual entries. No daily returns, percentiles,
-  continuous M1 series or automated gap/jump alerts are calculated yet.
-- An observation older than 48 elapsed hours is labelled as such. This is a simple
-  age indication, not an exchange-calendar freshness rule.
-- Energy conversion: 1 TWh = 1,000 GWh = 1,000,000 MWh. Volume conversion requires
-  an explicit calorific value: GWh = mcm × kWh/m³. Document HHV/LHV and reference
-  conditions whenever using this conversion with actual data.
-- Quiz score is self-assessed: 0, 0.5 or 1. The displayed average is the arithmetic
-  mean across attempts, including repeat attempts. Wrong + confidence 4 is tracked
-  separately. No automated scoring or mastery claim is made. Response time measures
-  elapsed time since the question opened and can include idle time.
+Feeds check on access. Morning also checks every 30 minutes while its session
+remains active: GIE gas data refreshes after six hours, weather after one hour,
+directories after 24 hours. Buttons can refresh immediately. This is **not an
+unattended background service**; nothing runs when Streamlit is stopped.
 
-## Database
+Every changed provider payload is archived with normalized records, retrieval
+time, source request and quality notes. Ingestion runs record successful and
+failed checks. Missing data stays missing; errors show the last saved snapshot
+from the same source when available. No invented or silently substituted data.
 
-[001_initial.sql](database/migrations/001_initial.sql) creates six tables plus a
-`learning_progress` view. The view derives progress from attempts using
-`security_invoker = true`; it avoids a second mutable copy drifting out of sync.
-This is the only schema deviation from the first-build list: a derived view instead
-of a stored progress table, plus a manual-observations table needed by Morning.
+TTF futures and options have no connected provider. Norway/pipeline flows, power,
+European weather weighting/revisions and full market-price analytics are pending.
+GIE service announcements are not a classified market-outage feed.
 
-The migration is for a new project, is transactional and changes no existing
-application objects. It fails if a named object already exists. Inspect such a
-conflict instead of deleting or replacing existing objects. No migration has been
-applied remotely by this build.
+## Storage and security
 
-[seed.sql](database/seed.sql) inserts the curriculum with stable IDs. Re-running
-the seed does not overwrite existing articles or questions. Connected mode reads
-the database curriculum; preview mode reads its bundled source. Future content
-changes require an explicit migration so references remain reproducible.
+Apply [001_initial.sql](database/migrations/001_initial.sql),
+[seed.sql](database/seed.sql), then
+[002_market_dashboard.sql](database/migrations/002_market_dashboard.sql) for a
+fresh project. Migrations are additive, transactional and intended to run once.
+Seed inserts stable curriculum IDs without overwriting existing rows.
 
-Regenerate the SQL after editing `learning/content.py`:
+Supabase Auth uses a public project key and the user's email/password. Auth clients
+and caches are session-scoped. User-owned tables have row-level security and
+select/insert permissions only. Keys stay in local secrets or environment
+variables. No service-role credentials, mutable history or app-level delete
+operations are used. See [database verification](database/VERIFY.md).
 
-```powershell
-python scripts/build_seed.py
-```
+Manual observations retain raw text, normalized value, explicit unit/source,
+observation/publication/retrieval times and quality. Revisions append; historical
+selection excludes information observed, published or entered after `as_of`.
+Quiz scores are self-assessed, not an automated mastery claim. Learning examples
+are clearly illustrative and reference primary sources.
 
-## Tests and current verification
-
-Full suite after installation:
+## Tests and verification
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe scripts/check_market_feeds.py --full
+.\.venv\Scripts\python.exe scripts/check_supabase.py
 ```
 
-The same test cases can run through Python's standard-library runner:
+The test suite covers calculation edge cases, API schema/units/pagination,
+failure fallback, archive retries, owner filtering, and all eleven Streamlit
+pages including input workflows. Public live feed checks pass; new tables deny
+anonymous access. Signed-in feed archive persistence still needs the user's app
+verification. A GitHub Actions workflow runs the tests without credentials.
 
-```powershell
-python -m unittest discover -s tests -v
-```
+Local verification on 2026-09-22: **83 tests and 36 subtests passed, 0 failed**;
+`pip check` reported no broken requirements. Streamlit starts on port 8501.
 
-Validation on 2026-09-14: dependencies installed successfully into `.venv` using
-Python 3.14.2. **48 tests passed, 0 failed, 0 skipped**, including all nine Streamlit
-smoke/workflow tests (and 27 passing subtests). `pip check` reported no broken
-requirements. The first sandboxed test run had temporary-file permission errors
-and a startup timeout; the approved unrestricted run passed in 2.73 seconds.
-Streamlit started successfully on `127.0.0.1:8501`.
+PyArrow is pinned to the tested 24.0.0 wheel: Windows Smart App Control blocked
+the 25.0.1 compute DLL on this computer. The compatible official wheel loads
+successfully without changing Windows security settings.
 
-Supabase setup: the user reports applying the schema/seed and creating an Auth
-account. The locally configured public key passed a live Auth service check;
-anonymous reads were denied on all six tables and the progress view. The app was
-restarted with network access for Supabase sign-in. These read-only checks can be
-repeated with `.venv\Scripts\python.exe scripts/check_supabase.py` and never print
-keys or response bodies.
-
-The user confirmed successful sign-in, the requested app checks and records
-persisting after signing out and back in on 2026-09-14.
-
-Pending: independent authenticated curriculum counts, desktop/mobile visual review
-and two-account RLS checks. The initial version is published on the repository's
-`main` branch. See
-[the database verification procedure](database/VERIFY.md).
-
-## Project layout
+## Layout
 
 ```text
 app.py                   Streamlit navigation
-views/                   Six initial pages
-components/session.py    Per-session auth, repository selection and read cache
-data/validation.py       Manual observation normalization and revision selection
-database/                Repository, initial migration, seed and verification guide
-learning/                Sourced curriculum and descriptive progress calculation
-utils/                   Settings, dates and explicit unit conversions
-tests/                   Data, security-boundary, curriculum and Streamlit tests
+views/                   Market, learning and workspace pages
+components/              Session auth, feed refresh, shared views and manual entry
+data/loaders/            Isolated GIE and Open-Meteo connectors
+data/                    Manual observation and market-entry validation
+analytics/               Pure, tested gas/weather/volatility calculations
+database/                Repositories, migrations, seed and verification guide
+learning/                Sourced curriculum and review calculations
+scripts/                 Read-only provider/Supabase checks and seed generation
+tests/                   Unit, ingestion, repository and Streamlit workflows
 ```
-
-The app follows [Streamlit's multipage API](https://docs.streamlit.io/develop/concepts/multipage-apps/page-and-navigation).
-Read results are cached for 30 seconds per session; writes and the refresh button
-invalidate the cache. An API failure shows a sanitized error and the last successful
-read time where available, without substituting preview data. Dependency ranges
-are bounded but not locked; record a tested lock set after the first successful
-installation.
-
-## Next increment
-
-Use the manual workflow for several days, then build the GIE storage connector
-with documented API fields, units and ingestion tests.
-Provider access details will be requested when that work begins. Predictions use
-evening-review references for post-mortems in V0.1; structured outcome scoring,
-adaptive learning and additional market pages follow the roadmap.

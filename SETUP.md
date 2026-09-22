@@ -1,9 +1,35 @@
 # Your setup steps
 
-The local environment was repaired and dependencies installed on 2026-09-14.
-All 48 tests passed, including the UI workflows. On this computer, you can now
-skip installation and use **Start Dashboard.cmd** for subsequent launches. The
-commands below remain available for setting up a fresh environment.
+## Continue with Market Dashboard (2026-09-22)
+
+You have already applied migration 002. **Do not run it again.** The GIE key is
+configured locally, and the new dashboard is implemented.
+
+1. Open [the dashboard](http://127.0.0.1:8501). If it is stopped, double-click
+   **Start Dashboard.cmd**. Sign in with your existing app account.
+2. Open **Market Dashboard → Morning**. The first signed-in visit fetches the
+   available five-year-plus storage history, LNG history and weather forecast.
+   Allow the initial retrieval to finish. Check the gas-day dates and feed status.
+3. Open **Fundamentals** to select a country, inspect seasonal storage or explore
+   LNG and weather. **Physical System** loads GIE infrastructure datasets;
+   **Events** loads GIE service announcements.
+4. Open **Data / Admin** to inspect/export the loaded raw and normalized snapshots.
+   In Supabase Table Editor, confirm `market_feed_batches` and `ingestion_runs`
+   contain your user-owned rows. Sign out/in and return to Morning to verify reuse.
+
+Morning refreshes automatically while its session remains active. GIE history is
+checked every six hours, weather hourly, directories daily; the refresh buttons
+check immediately. Nothing runs with Streamlit closed. No additional key is
+needed for the public Open-Meteo weather feed. TTF futures/options remain
+unavailable until a provider is selected; sourced option marks can be entered in
+Options & Volatility. Existing manual observations moved to Data / Admin.
+
+The environment uses PyArrow 24.0.0: Windows Smart App Control blocked the 25.0.1
+compute DLL on this computer. The compatible official wheel was tested without
+changing Windows security settings. `requirements.txt` pins that version.
+
+The remaining instructions are for a fresh installation. Full data definitions,
+refresh behavior and limitations are in [docs/MARKET_DATA.md](docs/MARKET_DATA.md).
 
 Existing services:
 
@@ -45,7 +71,8 @@ these commands call the environment's Python directly. A quoted path alone in
 PowerShell only prints text; it does not execute a program or activate an environment.
 
 Open [localhost:8501](http://localhost:8501). The app should show Morning with empty
-metric cards. All six pages are accessible without credentials. Keep that terminal
+metric cards. All eleven pages are accessible without credentials. API ingestion
+requires sign-in to archive data. Keep that terminal
 open while using the app; `Ctrl+C` stops it. Use a second terminal for tests.
 
 After installation, you can double-click **Start Dashboard.cmd** in this folder
@@ -67,6 +94,8 @@ Open the project dashboard linked above, then **SQL Editor → New query**.
 3. Open [seed.sql](database/seed.sql), copy its contents into a new query and run it.
 4. In Table Editor, verify `knowledge_articles` contains 10 rows and `questions`
    contains 20. Personal-data tables should initially be empty.
+5. Run [002_market_dashboard.sql](database/migrations/002_market_dashboard.sql)
+   once after 001. It adds five market tables and preserves existing records.
 
 The initial migration creates tables, access policies and one derived view. It does
 not delete existing data. If SQL reports an error, share that error before running
@@ -99,6 +128,7 @@ Replace the key placeholder:
 ```toml
 SUPABASE_URL = "https://gxnliymqvplnwoahxscf.supabase.co"
 SUPABASE_ANON_KEY = "your-publishable-or-legacy-anon-key"
+GIE_API_KEY = "your-gie-api-key"
 ```
 
 The variable name remains `SUPABASE_ANON_KEY` for both supported public key types.
@@ -112,7 +142,7 @@ no automatic import into your permanent records.
 
 ## 5. Verify permanent storage
 
-1. Add one real, public observation with its exact contract/scope, unit and source.
+1. In Data / Admin, add one real, public observation with its exact contract/scope, unit and source.
 2. Save one short journal entry.
 3. Answer a quiz question, reveal the answer and save a self-assessment.
 4. Reload the browser, sign in again and confirm those records remain.

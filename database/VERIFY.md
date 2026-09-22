@@ -15,15 +15,17 @@ select tablename, rowsecurity
 from pg_tables
 where schemaname = 'public'
   and tablename in ('knowledge_articles', 'questions', 'manual_observations',
-                    'journal_entries', 'predictions', 'quiz_attempts');
+                    'journal_entries', 'predictions', 'quiz_attempts',
+                    'market_feed_batches', 'ingestion_runs', 'assets',
+                    'option_marks', 'market_events');
 select tablename, policyname, roles, cmd
 from pg_policies
 where schemaname = 'public';
 ```
 
-Expect 10 articles, 20 questions, RLS enabled on all six listed base tables, and
+Expect 10 articles, 20 questions, RLS enabled on all eleven listed base tables, and
 only the documented SELECT/INSERT policies. These are two curriculum tables and
-four private tables. `learning_progress` is a view, not a table.
+nine private tables. `learning_progress` is a view, not a table.
 
 ## Anonymous access
 
@@ -52,6 +54,12 @@ have no privileges on the app tables or progress view.
 5. Sign out and back in as A; A's records must persist.
 6. Confirm that the application offers no editing/deleting of old predictions,
    attempts or journal entries. Corrections are new records.
+7. While signed in as A, open Morning. Check that `market_feed_batches` and
+   `ingestion_runs` contain A-owned records and show success or a useful failure
+   status. Sign out/in and confirm saved snapshots can be reused.
+8. B's feed batches/runs must use B's user ID; B may fetch the same public data,
+   but cannot select A's batch IDs. Assets, option marks and market events must
+   likewise remain isolated. Explicitly test each of these tables with B's JWT.
 
 Keep test fixtures identifiable. Do not delete real records during verification.
 For direct API tests, a request carrying B's JWT and A's `user_id` must fail on
@@ -66,9 +74,18 @@ without showing invented zero values or switching to preview storage. Reconnect
 and refresh. A failed save is not reported as successful; inspect records before
 retrying an ambiguous network failure to avoid creating a duplicate.
 
+For provider failures, use the page's **Refresh market data** button after a
+successful retrieval. Morning should keep the last saved same-source snapshot,
+show its gas-day date and indicate the refresh failure. Saved-record refresh and
+forced provider refresh are distinct actions.
+
 ## Migration compatibility
 
 The initial SQL creates new objects in one transaction. It intentionally fails on
 conflicting existing names. Seed insertion is repeatable with `on conflict (id) do
 nothing`. Review future schema changes as separate additive migrations; do not
 rerun the initial migration to update a live schema.
+
+Migration 002 adds five owner-scoped market tables without changing prior data.
+The user reports applying it on 2026-09-22. Do not edit or rerun that applied
+migration to introduce later schema changes; create a new numbered migration.

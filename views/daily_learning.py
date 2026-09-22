@@ -18,8 +18,8 @@ st.write("Illustrative exercise: convert 50 mcm into GWh at an explicitly assume
 with st.expander("Show calculation and assumptions"):
     st.write("50 × 11 = 550 GWh. The assumed calorific value must be replaced with a documented value for real data, including reference conditions and HHV/LHV basis.")
 st.subheader("One chart to investigate")
-st.write("Open your Morning observation history. Identify a change and check its source, date and unit before explaining it.")
-st.page_link("views/morning.py", label="Open observation history →")
+st.write("Open Fundamentals. Identify a storage or LNG send-out change and check its source, gas day and unit before explaining it.")
+st.page_link("views/fundamentals.py", label="Open Fundamentals →")
 st.subheader("One historical episode")
 st.write(HISTORY)
 st.markdown(f"[IEA: Gas Market Report, Q1-2023]({HISTORY_URL})")
