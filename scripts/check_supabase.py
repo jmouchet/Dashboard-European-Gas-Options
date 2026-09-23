@@ -49,7 +49,7 @@ def main() -> int:
 
     endpoints = [("Auth service", "/auth/v1/settings")]
     for table in ["knowledge_articles", "questions", "manual_observations", "journal_entries", "predictions", "quiz_attempts", "learning_progress",
-                  "market_feed_batches", "ingestion_runs", "assets", "option_marks", "market_events"]:
+                  "market_feed_batches", "ingestion_runs", "assets", "option_marks", "market_events", "market_brief_runs", "market_briefs"]:
         column = "article_id" if table == "learning_progress" else "id"
         endpoints.append((table, f"/rest/v1/{table}?select={column}&limit=0"))
     with ThreadPoolExecutor(max_workers=4) as pool:

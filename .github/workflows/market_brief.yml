@@ -1,0 +1,40 @@
+name: Morning TTF brief
+on:
+  schedule:
+    - cron: '0 6 * * *'
+      timezone: Europe/Paris
+  workflow_dispatch:
+    inputs:
+      retry:
+        description: 'Retry a failed/interrupted brief with a new paid API call (maximum one retry)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: morning-ttf-brief
+  cancel-in-progress: false
+jobs:
+  brief:
+    # Enable only after SQL 003 and all repository secrets are configured.
+    if: vars.MARKET_BRIEF_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Generate and archive the daily brief
+        run: python scripts/generate_market_brief.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_BRIEF_EMAIL: ${{ secrets.SUPABASE_BRIEF_EMAIL }}
+          SUPABASE_BRIEF_PASSWORD: ${{ secrets.SUPABASE_BRIEF_PASSWORD }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BRIEF_MODEL: ${{ vars.OPENAI_BRIEF_MODEL }}
+          BRIEF_RETRY: ${{ github.event_name == 'workflow_dispatch' && inputs.retry }}

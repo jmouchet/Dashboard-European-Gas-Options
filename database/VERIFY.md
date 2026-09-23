@@ -1,6 +1,6 @@
 # Supabase verification before hosting
 
-These checks require the schema and seed to be installed. Local mock tests do not
+These checks require migrations 001–003. The legacy seed is optional. Local mock tests do not
 prove that a remote project's grants, policies and authentication are correct.
 Never use a service-role key when testing access restrictions.
 
@@ -9,23 +9,22 @@ Never use a service-role key when testing access restrictions.
 Run in SQL Editor as the project administrator:
 
 ```sql
-select count(*) as articles from public.knowledge_articles;
-select count(*) as questions from public.questions;
 select tablename, rowsecurity
 from pg_tables
 where schemaname = 'public'
   and tablename in ('knowledge_articles', 'questions', 'manual_observations',
                     'journal_entries', 'predictions', 'quiz_attempts',
                     'market_feed_batches', 'ingestion_runs', 'assets',
-                    'option_marks', 'market_events');
+                    'option_marks', 'market_events',
+                    'market_brief_runs', 'market_briefs');
 select tablename, policyname, roles, cmd
 from pg_policies
 where schemaname = 'public';
 ```
 
-Expect 10 articles, 20 questions, RLS enabled on all eleven listed base tables, and
+Expect RLS enabled on all thirteen listed base tables, and
 only the documented SELECT/INSERT policies. These are two curriculum tables and
-nine private tables. `learning_progress` is a view, not a table.
+eleven private tables. `learning_progress` is a preserved legacy view, not a table.
 
 ## Anonymous access
 
@@ -45,10 +44,10 @@ have no privileges on the app tables or progress view.
 ## Account separation and persistence
 
 1. Sign in as your normal app account A. Save one sourced observation, journal
-   entry and quiz attempt. Record their IDs from Data / Admin.
+   entry. Record their IDs from Data / Admin.
 2. Create a separate temporary Auth account B in the Supabase dashboard. Open the
    app in a private browser window and sign in as B.
-3. B must see the curriculum but no A observations, journal entries, predictions,
+3. B must see no A observations, journal entries, predictions,
    quiz attempts or progress. Export from Data / Admin to confirm it is empty.
 4. Save one B journal entry. A must not see it, including after refresh.
 5. Sign out and back in as A; A's records must persist.
@@ -58,8 +57,18 @@ have no privileges on the app tables or progress view.
    `ingestion_runs` contain A-owned records and show success or a useful failure
    status. Sign out/in and confirm saved snapshots can be reused.
 8. B's feed batches/runs must use B's user ID; B may fetch the same public data,
-   but cannot select A's batch IDs. Assets, option marks and market events must
+   but cannot select A's batch IDs. Assets, historical option marks and market events must
    likewise remain isolated. Explicitly test each of these tables with B's JWT.
+9. After billing and GitHub configuration, launch **Morning TTF brief** using A's
+   app credentials in repository secrets. In Supabase, verify one A-owned row in
+   `market_brief_runs` and its linked result in `market_briefs`. A successful result
+   must include body, citations, dated public input context and the raw API response.
+10. Reload Morning as A and confirm the brief is reused. B must not be able to
+    read A's brief or attempt rows, including when filtering directly by A's IDs.
+    Test both SELECT isolation and rejection of INSERT with another user's ID.
+11. Run the workflow again after success: it must report success without a second
+    attempt or a new OpenAI call. Check the row counts and the OpenAI usage page.
+    Before intentionally testing failure/retry, remember a retry can be billed.
 
 Keep test fixtures identifiable. Do not delete real records during verification.
 For direct API tests, a request carrying B's JWT and A's `user_id` must fail on
@@ -89,3 +98,9 @@ rerun the initial migration to update a live schema.
 Migration 002 adds five owner-scoped market tables without changing prior data.
 The user reports applying it on 2026-09-22. Do not edit or rerun that applied
 migration to introduce later schema changes; create a new numbered migration.
+
+Migration 003 adds `market_brief_runs` and `market_briefs`; the user confirmed it
+applied successfully on 2026-09-23. Claims are unique by user/date/attempt, with a
+maximum of two attempts. Results reference the matching user/date claim and are
+append-only. Anonymous reads of both tables were rejected by the live project.
+Authenticated brief writes and two-account isolation still need the checks above.

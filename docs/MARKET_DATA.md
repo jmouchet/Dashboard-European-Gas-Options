@@ -1,6 +1,6 @@
 # Market data: sources, methods and operations
 
-Implemented and checked on 2026-09-22. Scope: the first useful Market Dashboard
+Implemented from 2026-09-22; Morning updated on 2026-09-23. Scope: the first useful Market Dashboard
 increment from roadmap sections 2–9. TTF prices, a full European gas balance and
 an options surface remain later increments.
 
@@ -47,9 +47,11 @@ automatic retry; manual refresh bypasses this delay.
 
 Morning uses a [Streamlit fragment](https://docs.streamlit.io/develop/api-reference/execution-flow/st.fragment)
 that checks every 30 minutes while the session remains active. Other pages check
-on access. This is **not an unattended scheduler**: closing the application stops
-updates. An always-on worker and credentials/scheduling setup would be a separate
-deployment step.
+on access. These app refreshes stop when the application is closed. A separate
+GitHub workflow can refresh EU AGSI, EU ALSI and Paris weather at 06:00 Europe/Paris
+before generating the daily brief, even with the computer off. It requires explicit
+configuration and activation; see [MARKET_BRIEF.md](MARKET_BRIEF.md). Other scopes
+continue to refresh on app access.
 
 `market_feed_batches` stores the source, exact non-secret request URL, UTC
 retrieval time, raw response, normalized records and quality notes. Analytics are
@@ -111,10 +113,16 @@ older vintages and audit runs remain in Supabase.
   returns × sqrt(252) × 100 and requires N+1 positive fixed-contract settlements.
   Missing/nonpositive prices invalidate affected windows. It is not exposed on
   manual observations because consecutive exchange sessions are not verified.
-- Manual options use volatility points (50 means 50% annualized), exact
-  underlying/expiry, source URL and explicit quote/delta/sign conventions.
-  Revised marks append a new record with a note; latest saved revision per date
-  is displayed within a single selected source/convention/contract.
+- Historical manual options use volatility points (50 means 50% annualized),
+  exact underlying/expiry, source URL and explicit quote/delta/sign conventions.
+  The Options & Volatility page is now unregistered; saved records remain in
+  Supabase and personal exports.
+
+Morning combines four physical metric cards, 30-day sparklines, current-year
+storage against the previous year and five-year seasonal band, 45-day LNG bars,
+and a 15-day Paris weather chart. Blue/amber arrows indicate a physical increase
+or decrease, not bullish/bearish TTF signals. Dates, units and estimated status
+remain visible. Missing values are never rendered as zero.
 
 Manual observations, option marks, events and assets remain editable only by
 appending records; no app-level update/delete exists. Event source facts and
@@ -134,10 +142,10 @@ and 3,816.7 GWh/d LNG send-out, both estimated for gas day 2026-09-20. These are
 verification results, never seeded or hard-coded dashboard values.
 
 `python scripts/check_supabase.py` checks Auth and confirms anonymous access is
-denied, including all five migration-002 tables. This does not prove authenticated
+denied, including the five migration-002 and two migration-003 tables. This does not prove authenticated
 writes or two-account isolation. The user has applied migration 002; sign-in,
 feed persistence across sign-out/in and account-isolation checks must use the
-user's own app account. Browser visual/mobile review was not available in the
+user's own app account. Migration 003 is also confirmed applied. Browser visual/mobile review was not available in the
 agent's browser connection; automated page rendering and workflows are tested.
 
 ## Remaining roadmap work

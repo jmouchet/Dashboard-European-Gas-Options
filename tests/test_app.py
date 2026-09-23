@@ -18,6 +18,7 @@ class AppTests(unittest.TestCase):
         self.app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=45)
         self.app.secrets["SUPABASE_URL"] = ""
         self.app.secrets["SUPABASE_ANON_KEY"] = ""
+        self.app.secrets["OPENAI_API_KEY"] = ""
         self.app.run()
 
     def page(self, name):
@@ -27,13 +28,13 @@ class AppTests(unittest.TestCase):
     def test_morning_starts_empty(self):
         self.assertFalse(self.app.exception)
         self.assertTrue(all(m.value == "—" for m in self.app.metric))
-        self.assertGreaterEqual(len(self.app.metric), 6)
+        self.assertGreaterEqual(len(self.app.metric), 2)
         self.assertNotIn("Today's investigation", [s.value for s in self.app.subheader])
         self.assertNotIn("Observation history", [s.value for s in self.app.subheader])
         self.assertFalse(any(b.label == "Save observation" for b in self.app.button))
 
     def test_new_market_pages(self):
-        for name in ("markets", "fundamentals", "physical", "options", "events"):
+        for name in ("markets", "fundamentals", "physical", "events"):
             with self.subTest(page=name):
                 self.page(name)
 
@@ -44,14 +45,14 @@ class AppTests(unittest.TestCase):
         self.app.radio[0].set_value("Weather").run()
         self.assertFalse(self.app.exception)
 
-    def test_knowledge_page(self):
-        self.page("knowledge")
-
-    def test_daily_learning_page(self):
-        self.page("daily_learning")
-
-    def test_quiz_page(self):
-        self.page("quiz")
+    def test_only_market_and_workspace_navigation(self):
+        import streamlit as st
+        with patch("streamlit.navigation", wraps=st.navigation) as navigation:
+            self.app.run()
+        sections = navigation.call_args.args[0]
+        self.assertEqual(set(sections), {"Market Dashboard", "Workspace"})
+        self.assertEqual([p.title for p in sections["Market Dashboard"]],
+                         ["Morning", "Markets", "Fundamentals", "Physical System", "Events"])
 
     def test_journal_page(self):
         self.page("journal")
@@ -74,21 +75,6 @@ class AppTests(unittest.TestCase):
         self.assertEqual(app.session_state["preview_rows"]["manual_observations"][0]["clean_value"], 80)
         self.assertTrue(any("Added to this session" in s.value for s in app.success))
 
-    def test_quiz_captures_answer_before_grading(self):
-        self.page("quiz")
-        app = self.app
-        app.text_area[0].input("2,000 GWh")
-        app.radio[0].set_value(4)
-        next(b for b in app.button if b.label == "Reveal reference answer").click().run()
-        self.assertFalse(app.exception)
-        app.radio[0].set_value(1.0).run()
-        next(b for b in app.button if b.label == "Save attempt").click().run()
-        self.assertFalse(app.exception)
-        row = app.session_state["preview_rows"]["quiz_attempts"][0]
-        self.assertEqual(row["confidence"], 4)
-        self.assertEqual(row["user_answer"], "2,000 GWh")
-        self.assertEqual(row["score"], 1)
-
     def test_journal_save(self):
         self.page("journal")
         app = self.app
@@ -96,18 +82,6 @@ class AppTests(unittest.TestCase):
         next(b for b in app.button if b.label == "Save journal entry").click().run()
         self.assertFalse(app.exception)
         self.assertEqual(len(app.session_state["preview_rows"]["journal_entries"]), 1)
-
-    def test_option_mark_save_and_history(self):
-        self.page("options")
-        values = {"Exact underlying": "Fixture TTF", "ATM (vol pts)": "50", "25D risk reversal (vol pts)": "-2",
-                  "Quote and delta convention": "Fixture source convention", "Public source URL": "https://example.com"}
-        for widget in self.app.text_input:
-            if widget.label in values:
-                widget.input(values[widget.label])
-        next(b for b in self.app.button if b.label == "Save option mark").click().run()
-        self.assertFalse(self.app.exception)
-        self.assertEqual(self.app.session_state["preview_rows"]["option_marks"][0]["atm_vol"], 50)
-        self.assertIn("50.00 vol pts", [m.value for m in self.app.metric])
 
     def test_asset_profile_save_and_display(self):
         self.page("physical")
@@ -140,9 +114,8 @@ class AppTests(unittest.TestCase):
         with patch("components.market_data.load_feed", side_effect=lambda source, scope, force=False: result if source == "GIE AGSI" else empty):
             self.app.run()
             self.assertFalse(self.app.exception)
-            storage = next(m for m in self.app.metric if m.label == "EU storage")
-            self.assertEqual(storage.value, "71.00")
-            self.assertEqual(storage.delta, "+1.00 pp")
+            self.assertGreaterEqual(len(self.app.get("plotly_chart")), 4)
+            self.assertTrue(any(s.value == "Stockage · Où en est-on ?" for s in self.app.subheader))
             self.page("fundamentals")
 
 
